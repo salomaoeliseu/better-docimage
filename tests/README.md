@@ -1,6 +1,6 @@
-# Testes da fase 0
+# Testes das fases 0 e 1
 
-Esta suíte congela o comportamento de `better_docimage.py` antes da refatoração. O script de produção não é alterado aqui.
+Esta suíte congela o comportamento de `better_docimage.py` antes da extração do pacote. A Fase 0 criou o baseline; a Fase 1 adicionou os contratos explícitos, a validação antecipada e a centralização do tuning sem mover arquivos.
 
 ## Como rodar
 
@@ -11,7 +11,7 @@ pytest -m fast
 pytest -m slow
 ```
 
-`pytest -m fast` é o gate da fase 0. A suíte `slow` reexecuta o pipeline nas três imagens de `assets/` e por isso fica de fora desse gate.
+`pytest -m fast` é o gate das fases 0 e 1. A suíte `slow` reexecuta o pipeline nas três imagens de `assets/` e por isso fica de fora desse gate.
 
 ## Dependências do baseline
 
@@ -36,6 +36,10 @@ Os pins estão em `requirements.txt`. `pytest==9.2.0` está em `requirements-dev
 
 As imagens completas não são versionadas. O PDF reutiliza a miniatura e as estatísticas do PNG do mesmo modo, porque os dois arquivos saem do mesmo array.
 
+### Mudança de metadados na Fase 1
+
+A Fase 1 passou a derivar o DPI de `target_width / 8.27` (ADR-005). Para o alvo padrão de 2480 px, o metadado físico deixa de ser 300 DPI fixo e passa a ser aproximadamente 299,87 DPI. Isso altera os bytes de PNG e PDF e, portanto, os hashes do baseline. Os pixels, as estatísticas e as miniaturas permanecem idênticos; o manifest foi regenerado uma única vez e as miniaturas foram conferidas por SHA-256 antes e depois.
+
 ### Tolerâncias
 
 Na miniatura, em níveis de 8 bits:
@@ -53,13 +57,22 @@ PNG não recebe esse tratamento: o hash cru tem de coincidir no ambiente pinado.
 
 ## O que os testes rápidos travam
 
+Contratos da Fase 1:
+
+- `OutputMode` é a única fonte do vocabulário `color`, `gray` e `bw`, e o parser deriva ajuda e validação dela;
+- `EnhancementResult` expõe apenas os modos solicitados, na ordem pedida, e `RenderedImage.is_binary` carrega a semântica binária;
+- `Size`, `Offset`, `TransformPlan` e `PreparedInput` substituem tuplas posicionais nas fronteiras;
+- `enhance` não calcula `gray`/`bw` quando apenas `color` é pedido, nem `bw` quando apenas `gray` é pedido;
+- o DPI é derivado da largura alvo e o I/O não varre pixels para decidir se a imagem é binária.
+
 Geometria, com matrizes controladas:
 
 - `combined = fine_rotation @ crop_matrix @ geometry`;
 - essa ordem não é intercambiável;
 - um ponto transformado pela matriz combinada coincide com a aplicação passo a passo;
 - sem detecção e com skew zero, a combinada é a identidade;
-- `--corners` é convertido subtraindo `original_crop_offset` dentro de `build_combined_transform`. `prepare_input` ainda não existe; isso é a fase 1.
+- `prepare_input` é o único ponto que converte `--corners` da imagem original para a imagem recortada;
+- imagem sem margens mantém offset zero, imagem totalmente branca devolve offset zero e cantos fora do recorte não são truncados.
 
 Reamostragem:
 
@@ -68,17 +81,22 @@ Reamostragem:
 
 A prévia geométrica pode chamar `warpPerspective` à parte. Essa chamada não produz a imagem de saída e não entra na contagem do caminho final.
 
-CLI, comportamento atual (a fase 1 muda estes casos; ver ADR-004):
+CLI, depois da validação antecipada (ADR-004):
 
 | Caso | Resultado travado |
 |---|---|
-| `--modes` desconhecido | código 2, depois do processamento |
-| `--modes` vazio | código 0, sem arquivos |
-| `--modes` duplicado | código 0, o modo é gravado duas vezes |
-| `--corners` inválido | código 1, com traceback |
-| `--sharpen` negativo | código 0; o unsharp é desligado |
-| `--gamma 0` | código 2, antes de abrir a imagem |
+| `--modes` desconhecido | código 2, antes de abrir a imagem |
+| `--modes` vazio | código 2, antes de abrir a imagem |
+| `--modes` duplicado | código 0, o modo é gravado uma vez |
+| `--corners` inválido | código 2, sem traceback |
+| `--sharpen` negativo | código 2 |
+| `--denoise` negativo | código 2 |
+| `--gamma 0` ou `--width 0` | código 2 |
+| `--gamma` não finito ou `--corners` com `NaN`/`inf` | código 2 |
+| imagem ausente | código 1, log em stderr, sem traceback |
+
+Fallbacks de detecção e diagnóstico usam `logging` em stderr; `--verbose` aumenta o nível. O `print` de status (`ok -> ...`) permanece apenas na camada de CLI.
 
 ## Recriar o baseline
 
-Só rode `python tests/generate_golden.py` quando a mudança de comportamento for intencional. Uma mudança de hash no ambiente pinado é regressão, não ruído.
+Só rode `python tests/generate_golden.py` quando a mudança de comportamento for intencional. Uma mudança de hash no ambiente pinado é regressão, não ruído, exceto quando acompanhada de mudança de metadado documentada como a do DPI acima.

@@ -20,8 +20,9 @@ def test_warp_and_upscale_once_calls_warp_perspective_exactly_once(monkeypatch):
 
     monkeypatch.setattr(bdi.cv2, "warpPerspective", wrapped)
     image = np.full((20, 30, 3), 90, dtype=np.uint8)
+    plan = bdi.TransformPlan(np.eye(3), bdi.Size(30, 20))
 
-    bdi.warp_and_upscale_once(image, np.eye(3), (30, 20), target_width=40)
+    bdi.warp_and_upscale_once(image, plan, target_width=40)
 
     assert calls["n"] == 1
 

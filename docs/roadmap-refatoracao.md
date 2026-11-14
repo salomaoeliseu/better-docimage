@@ -1,7 +1,7 @@
 # Roadmap de refatoração estrutural — Better-DocImage
 
 - **Data**: 2026-11-13
-- **Status**: Fase 0 concluída; Fase 1 pendente
+- **Status**: Fases 0 e 1 concluídas; Fases 2–4 pendentes
 - **ADRs**: [001](adr/001-pacote-modular-por-responsabilidade.md) a [006](adr/006-golden-outputs-antes-da-refatoracao.md)
 - **Objetivo**: melhorar manutenibilidade, testabilidade e clareza estrutural **sem alterar o comportamento observável** do pipeline.
 
@@ -94,26 +94,28 @@
 
 **Objetivo:** eliminar os acoplamentos implícitos antes de qualquer extração de arquivo. Nenhum módulo é movido nesta fase.
 
+**Concluída em 2026-11-14.** A suíte rápida e os 18 golden outputs passaram no ambiente pinado. Os pixels e as miniaturas permaneceram idênticos; o manifest foi regenerado porque o DPI passou a ser derivado de `target_width / 8.27`, alterando apenas metadados de PNG/PDF.
+
 ### Tarefas
 
-- [ ] Implementar `OutputMode`, `EnhancementResult`, `Size`, `Offset`, `TransformPlan` e `RenderedImage` (ADR-002).
-- [ ] Fazer `enhance` calcular apenas os modos solicitados e o argparse derivar `choices` do enum.
-- [ ] Implementar `prepare_input` e remover `original_crop_offset` de `build_combined_transform` (ADR-003).
-- [ ] Separar `build_parser()` e `run(args)`; validar todos os argumentos antes de `load_image` (ADR-004).
-- [ ] Adotar `argparse.ArgumentTypeError`/`parser.error` para erros de uso e `logging` em stderr para diagnóstico e fallbacks.
-- [ ] Substituir `print("aviso: ...")` por log com motivo do fallback.
-- [ ] Criar `DetectionParams`, `QualityParams` e `IoParams`; remover constantes mágicas dos corpos das funções (ADR-005).
-- [ ] Derivar DPI de `target_width / 8.27` e centralizar a conversão para PIL; remover `quality=92` morto.
-- [ ] Atualizar testes e confirmar golden outputs dentro da tolerância.
+- [x] Implementar `OutputMode`, `EnhancementResult`, `Size`, `Offset`, `TransformPlan` e `RenderedImage` (ADR-002).
+- [x] Fazer `enhance` calcular apenas os modos solicitados e o argparse derivar `choices` do enum.
+- [x] Implementar `prepare_input` e remover `original_crop_offset` de `build_combined_transform` (ADR-003).
+- [x] Separar `build_parser()` e `run(args)`; validar todos os argumentos antes de `load_image` (ADR-004).
+- [x] Adotar `argparse.ArgumentTypeError`/`parser.error` para erros de uso e `logging` em stderr para diagnóstico e fallbacks.
+- [x] Substituir `print("aviso: ...")` por log com motivo do fallback.
+- [x] Criar `DetectionParams`, `QualityParams` e `IoParams`; remover constantes mágicas dos corpos das funções (ADR-005).
+- [x] Derivar DPI de `target_width / 8.27` e centralizar a conversão para PIL; remover `quality=92` morto.
+- [x] Atualizar testes e confirmar golden outputs dentro da tolerância.
 
 ### Critérios de aceite
 
-- Nenhum `dict[str, np.ndarray]` cruza a fronteira do pipeline.
-- Nenhuma função retorna `(ndarray, (width, height))` ou offset como tupla posicional.
-- Argumento inválido falha antes de qualquer leitura de imagem, com código 2 e sem traceback.
-- Nenhum `print` dentro de funções de biblioteca.
-- Golden outputs passam sem mudança de comportamento.
-- Um modo novo exige uma única edição no enum.
+- [x] Nenhum `dict[str, np.ndarray]` cruza a fronteira do pipeline.
+- [x] Nenhuma função retorna `(ndarray, (width, height))` ou offset como tupla posicional.
+- [x] Argumento inválido falha antes de qualquer leitura de imagem, com código 2 e sem traceback.
+- [x] Nenhum `print` dentro de funções de biblioteca.
+- [x] Golden outputs passam sem mudança de comportamento.
+- [x] Um modo novo exige uma única edição no enum.
 
 ### Riscos
 
@@ -221,11 +223,11 @@
 
 ## Critérios de aceite globais
 
-- [ ] Saída preservada nos 18 golden outputs dentro da tolerância documentada.
-- [ ] Nenhum contrato implícito (dicionário de modos, tupla de dimensões, offset sem tipo) nas fronteiras.
-- [ ] Toda validação de CLI ocorre antes de I/O; erros de uso não produzem traceback.
-- [ ] `logging` substitui `print` em código de biblioteca.
-- [ ] Cada parâmetro de tuning tem uma única fonte de verdade.
+- [x] Saída preservada nos 18 golden outputs dentro da tolerância documentada.
+- [x] Nenhum contrato implícito (dicionário de modos, tupla de dimensões, offset sem tipo) nas fronteiras.
+- [x] Toda validação de CLI ocorre antes de I/O; erros de uso não produzem traceback.
+- [x] `logging` substitui `print` em código de biblioteca.
+- [x] Cada parâmetro de tuning tem uma única fonte de verdade.
 - [ ] Pacote com 6–7 módulos, sem módulo acima de 30% dos statements e sem imports circulares.
 - [ ] Testes unitários e golden outputs rodando em CI.
 - [ ] Instalação limpa, dependências pinadas e entry point funcionando.

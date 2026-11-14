@@ -1,4 +1,4 @@
-"""Congela a CLI atual. A fase 1 troca estas expectativas pela validação antecipada."""
+"""Validação antecipada da CLI: argumentos falham antes de qualquer I/O."""
 
 from __future__ import annotations
 
@@ -29,43 +29,29 @@ def _run(*args: str) -> subprocess.CompletedProcess[str]:
     )
 
 
-def test_unknown_mode_exits_2(tmp_path: Path):
-    source = _write_input(tmp_path)
-    prefix = tmp_path / "saida"
-    result = _run(
-        str(source),
-        "-o",
-        str(prefix),
-        "--modes",
-        "color,nope",
-        "--denoise",
-        "0",
-        "--width",
-        "32",
-    )
+def _assert_usage_error(result: subprocess.CompletedProcess[str], fragment: str) -> None:
     assert result.returncode == 2
-    assert "inválido" in result.stderr
+    assert fragment in result.stderr
+    assert "Traceback" not in result.stderr
 
 
-def test_empty_modes_exits_0_without_writing_files(tmp_path: Path):
-    source = _write_input(tmp_path)
-    prefix = tmp_path / "saida"
-    result = _run(
-        str(source),
-        "-o",
-        str(prefix),
-        "--modes",
-        "",
-        "--denoise",
-        "0",
-        "--width",
-        "32",
-    )
-    assert result.returncode == 0
-    assert list(tmp_path.glob("saida_*.png")) == []
+def test_unknown_mode_exits_2_before_reading_the_image(tmp_path: Path):
+    missing = tmp_path / "ausente.png"
+    result = _run(str(missing), "--modes", "color,nope")
+
+    _assert_usage_error(result, "inválido")
+    assert not missing.exists()
 
 
-def test_duplicate_modes_are_processed_twice(tmp_path: Path):
+def test_empty_modes_exits_2_before_reading_the_image(tmp_path: Path):
+    missing = tmp_path / "ausente.png"
+    result = _run(str(missing), "--modes", "")
+
+    _assert_usage_error(result, "pelo menos um modo")
+    assert not missing.exists()
+
+
+def test_duplicate_modes_are_processed_once(tmp_path: Path):
     source = _write_input(tmp_path)
     prefix = tmp_path / "saida"
     result = _run(
@@ -80,41 +66,25 @@ def test_duplicate_modes_are_processed_twice(tmp_path: Path):
         "32",
     )
     assert result.returncode == 0
-    assert result.stdout.count("ok ->") == 2
+    assert result.stdout.count("ok ->") == 1
     assert (tmp_path / "saida_gray.png").is_file()
     assert not (tmp_path / "saida_color.png").exists()
 
 
-def test_corners_with_wrong_arity_exit_1_with_traceback(tmp_path: Path):
-    source = _write_input(tmp_path)
-    result = _run(
-        str(source),
-        "--corners",
-        "1,2,3",
-        "--denoise",
-        "0",
-        "--width",
-        "32",
-    )
-    assert result.returncode == 1
-    assert "Traceback" in result.stderr
-    assert "8 valores" in result.stderr
+def test_corners_with_wrong_arity_exit_2_without_traceback(tmp_path: Path):
+    missing = tmp_path / "ausente.png"
+    result = _run(str(missing), "--corners", "1,2,3")
+
+    _assert_usage_error(result, "8 valores")
+    assert not missing.exists()
 
 
-def test_non_numeric_corners_exit_1_with_traceback(tmp_path: Path):
-    source = _write_input(tmp_path)
-    result = _run(
-        str(source),
-        "--corners",
-        "a,b,c,d,e,f,g,h",
-        "--denoise",
-        "0",
-        "--width",
-        "32",
-    )
-    assert result.returncode == 1
-    assert "Traceback" in result.stderr
-    assert "números" in result.stderr
+def test_non_numeric_corners_exit_2_without_traceback(tmp_path: Path):
+    missing = tmp_path / "ausente.png"
+    result = _run(str(missing), "--corners", "a,b,c,d,e,f,g,h")
+
+    _assert_usage_error(result, "números")
+    assert not missing.exists()
 
 
 def test_pdf_flag_adds_pdf_without_changing_the_png(tmp_path: Path):
@@ -143,28 +113,62 @@ def test_pdf_flag_adds_pdf_without_changing_the_png(tmp_path: Path):
     assert not (tmp_path / "sem_pdf_color.pdf").exists()
 
 
-def test_negative_sharpen_is_accepted(tmp_path: Path):
-    source = _write_input(tmp_path)
-    prefix = tmp_path / "saida"
-    result = _run(
-        str(source),
-        "-o",
-        str(prefix),
-        "--sharpen",
-        "-1",
-        "--denoise",
-        "0",
-        "--width",
-        "32",
-    )
-    assert result.returncode == 0
-    assert (tmp_path / "saida_color.png").is_file()
+def test_negative_sharpen_exits_2_before_reading_the_image(tmp_path: Path):
+    missing = tmp_path / "ausente.png"
+    result = _run(str(missing), "--sharpen", "-1")
+
+    _assert_usage_error(result, "sharpen")
+    assert not missing.exists()
 
 
 def test_zero_gamma_exits_2_before_reading_the_image(tmp_path: Path):
     missing = tmp_path / "ausente.png"
     result = _run(str(missing), "--gamma", "0")
-    assert result.returncode == 2
-    assert "gamma" in result.stderr
-    assert "Traceback" not in result.stderr
+
+    _assert_usage_error(result, "gamma")
     assert not missing.exists()
+
+
+def test_zero_width_exits_2_before_reading_the_image(tmp_path: Path):
+    missing = tmp_path / "ausente.png"
+    result = _run(str(missing), "--width", "0")
+
+    _assert_usage_error(result, "width")
+    assert not missing.exists()
+
+
+def test_negative_denoise_exits_2_before_reading_the_image(tmp_path: Path):
+    missing = tmp_path / "ausente.png"
+    result = _run(str(missing), "--denoise", "-1")
+
+    _assert_usage_error(result, "denoise")
+    assert not missing.exists()
+
+
+def test_non_finite_gamma_exits_2_before_reading_the_image(tmp_path: Path):
+    missing = tmp_path / "ausente.png"
+    result = _run(str(missing), "--gamma", "nan")
+
+    _assert_usage_error(result, "finito")
+    assert not missing.exists()
+
+
+def test_non_finite_corners_exit_2_before_reading_the_image(tmp_path: Path):
+    missing = tmp_path / "ausente.png"
+    result = _run(
+        str(missing),
+        "--corners",
+        "nan,0,1,0,1,1,0,1",
+    )
+
+    _assert_usage_error(result, "finitos")
+    assert not missing.exists()
+
+
+def test_missing_input_exits_1_without_traceback(tmp_path: Path):
+    missing = tmp_path / "ausente.png"
+    result = _run(str(missing), "--denoise", "0")
+
+    assert result.returncode == 1
+    assert "Traceback" not in result.stderr
+    assert str(missing) in result.stderr
