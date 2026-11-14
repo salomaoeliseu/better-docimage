@@ -26,12 +26,15 @@ from goldenlib import (
     load_raster,
     load_thumbnail,
     make_thumbnail,
+    missing_assets,
     normalized_pdf_sha256,
     read_manifest,
     same_pinned_environment,
     sha256_bytes,
     sha256_file,
 )
+
+MISSING_ASSETS = missing_assets()
 
 
 @pytest.mark.fast
@@ -86,6 +89,13 @@ def test_manifest_records_eighteen_outputs_and_thumbnails():
 
 
 @pytest.mark.slow
+@pytest.mark.skipif(
+    bool(MISSING_ASSETS),
+    reason=(
+        "assets/ não é versionado; coloque as imagens de entrada para rodar a "
+        f"regressão golden (faltando: {', '.join(MISSING_ASSETS)})"
+    ),
+)
 def test_baseline_outputs_are_reproducible():
     manifest = read_manifest()
     recorded = {(item["source"], item["mode"], item["kind"]): item for item in manifest["outputs"]}

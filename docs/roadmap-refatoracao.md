@@ -1,7 +1,7 @@
 # Roadmap de refatoração estrutural — Better-DocImage
 
 - **Data**: 2026-11-13
-- **Status**: Fases 0, 1, 2 e 3 concluídas; Fase 4 pendente
+- **Status**: Fases 0, 1, 2, 3 e 4 concluídas; primeira execução remota do CI pendente de push/PR
 - **ADRs**: [001](adr/001-pacote-modular-por-responsabilidade.md) a [006](adr/006-golden-outputs-antes-da-refatoracao.md)
 - **Objetivo**: melhorar manutenibilidade, testabilidade e clareza estrutural **sem alterar o comportamento observável** do pipeline.
 
@@ -189,23 +189,25 @@
 
 **Objetivo:** tornar a instalação e os resultados reprodutíveis.
 
+**Concluída em 2026-11-14.** O `pyproject.toml` passou a ser a fonte única de metadados, pins e configuração do pytest; o `README.md` documenta instalação, uso, API, testes e reprodutibilidade; e o workflow em `.github/workflows/ci.yml` executa a suíte rápida em push/PR e a lenta sob demanda/agendada. Os arquivos `requirements.txt`, `requirements-dev.txt` e `pytest.ini` foram removidos. A instalação limpa com `python -m pip install -e ".[dev]"`, os dois entry points, `pip check`, a suíte rápida (55 testes) e a suíte lenta (18 golden outputs) passaram no ambiente pinado. A primeira execução remota do workflow fica para o push/PR da fase.
+
 ### Tarefas
 
-- [ ] Criar `pyproject.toml` com metadados, dependências com faixas pinadas, dependências de desenvolvimento e entry point `better-docimage`.
-- [ ] Consolidar no `pyproject.toml` os pins temporários usados para gerar o baseline na Fase 0.
-- [ ] Criar `README.md` com instalação, uso, exemplos e links para ADRs/roadmap.
-- [ ] Configurar CI para `pytest -m fast` em todo push/PR e `pytest -m slow` sob demanda ou em job agendado.
-- [ ] Verificar instalação em ambiente limpo e execução do entry point.
-- [ ] Remover `requirements.txt` ou substituí-lo por um lock coerente com `pyproject.toml`.
-- [ ] Confirmar que os golden outputs são reproduzidos no ambiente pinado.
+- [x] Criar `pyproject.toml` com metadados, dependências com faixas pinadas, dependências de desenvolvimento e entry point `better-docimage`.
+- [x] Consolidar no `pyproject.toml` os pins temporários usados para gerar o baseline na Fase 0.
+- [x] Criar `README.md` com instalação, uso, exemplos e links para ADRs/roadmap.
+- [x] Configurar CI para `pytest -m fast` em todo push/PR e `pytest -m slow` sob demanda ou em job agendado.
+- [x] Verificar instalação em ambiente limpo e execução do entry point.
+- [x] Remover `requirements.txt` ou substituí-lo por um lock coerente com `pyproject.toml`.
+- [x] Confirmar que os golden outputs são reproduzidos no ambiente pinado.
 
 ### Critérios de aceite
 
-- `pip install -e .` em ambiente limpo instala e expõe `better-docimage`.
-- `better-docimage --help` funciona.
-- CI verde com testes rápidos; suíte lenta executável e documentada.
-- Versões de dependências reproduzem o baseline.
-- README permite que uma pessoa nova rode o projeto sem ler o código.
+- [x] `pip install -e .` em ambiente limpo instala e expõe `better-docimage`.
+- [x] `better-docimage --help` funciona.
+- [x] Workflow de CI configurado para testes rápidos em push/PR e suíte lenta sob demanda/agendada; os mesmos comandos passaram localmente. A primeira execução remota verde será confirmada no PR da fase.
+- [x] Versões de dependências reproduzem o baseline.
+- [x] README permite que uma pessoa nova rode o projeto sem ler o código.
 
 ---
 
@@ -233,9 +235,9 @@
 - [x] `logging` substitui `print` em código de biblioteca.
 - [x] Cada parâmetro de tuning tem uma única fonte de verdade.
 - [x] Pacote com 6–7 módulos, sem módulo acima de 30% dos statements e sem imports circulares.
-- [ ] Testes unitários e golden outputs rodando em CI.
-- [ ] Instalação limpa, dependências pinadas e entry point funcionando.
-- [ ] ADRs e README atualizados.
+- [ ] Testes unitários e golden outputs rodando em CI. O workflow está pronto; a primeira execução remota ocorre no push/PR.
+- [x] Instalação limpa, dependências pinadas e entry point funcionando.
+- [x] ADRs e README atualizados.
 
 ## Riscos e mitigação
 
@@ -257,20 +259,22 @@
 
 ## Métricas de sucesso
 
-| Métrica | Antes | Depois da Fase 3 | Meta |
+| Métrica | Antes | Depois da Fase 4 | Meta |
 |---|---|---|---|
 | Módulos de código | 1 | 7 | 6–7 |
 | Maior componente lógico | 37% | 27,8% (`detection.py`) | ≤ 30% |
 | Edições para adicionar um modo | 4 | 1 (`OutputMode`) | 1 |
 | Tempo até erro de argumento inválido | após processamento | antes de I/O | antes de I/O |
-| Testes automatizados | 0 | 49 rápidos + 1 lento (18 golden outputs) | Unitários + 18 golden outputs |
+| Testes automatizados | 0 | 55 rápidos + 1 lento (18 golden outputs) | Unitários + 18 golden outputs |
 | `print` em código de biblioteca | 1 | 0 | 0 |
 | Fontes de verdade para tuning | 6+ funções | 1 (`settings.py`) | 1 (`settings.py`) |
 | DPI de saída | fixo em 300 | derivado de `target_width` | derivado de `target_width` |
-| Instalação reprodutível | não pinada | dependências pinadas; falta `pyproject.toml`/lock | `pyproject.toml` + lock |
+| Entry point instalável | não existia | `better-docimage` | `better-docimage` |
+| Instalação reprodutível | não pinada | `pyproject.toml` com pins exatos; sem `requirements.txt` | `pyproject.toml` com pins exatos |
+| CI | não existia | fast em push/PR; slow sob demanda/agendada | fast em push/PR; slow documentada |
 
 ## Próximos passos
 
-1. Executar a Fase 4: `pyproject.toml`, README, CI e verificação em ambiente limpo.
-2. Fechar os critérios globais restantes depois do gate da Fase 4.
-3. Abrir o PR da Fase 3 referenciando a ADR-001 e o PR da Fase 4 referenciando a ADR-006.
+1. [x] Executar a Fase 4: `pyproject.toml`, README, CI e verificação em ambiente limpo.
+2. Fazer push da branch da Fase 4, abrir o PR referenciando a ADR-006 e confirmar a primeira execução remota do CI.
+3. Fechar o critério global de CI depois do primeiro workflow verde e, se desejado, provisionar os assets para a suíte lenta no job agendado.

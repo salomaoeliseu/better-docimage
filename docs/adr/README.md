@@ -2,6 +2,8 @@
 
 Este diretório registra as decisões arquiteturais da refatoração estrutural do projeto. O contexto completo, os achados e a ordem de execução estão no [roadmap de refatoração](../roadmap-refatoracao.md).
 
+> **Estado em 2026-11-14:** as decisões das ADR-001 a ADR-006 foram implementadas nas fases 0 a 4. A Fase 4 consolidou o `pyproject.toml` como fonte única de metadados e pins, adicionou o README e configurou o CI. Nenhuma decisão original foi substituída.
+
 ## Índice
 
 | ADR | Decisão | Status | Data |

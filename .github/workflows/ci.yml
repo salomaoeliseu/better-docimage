@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fast:
+    name: Fast tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+          cache: pip
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - name: Check dependency consistency
+        run: python -m pip check
+      - name: Verify entry points
+        run: |
+          better-docimage --help
+          python -m better_docimage --help
+      - name: Fast test suite
+        run: python -m pytest -m fast -q
+
+  slow:
+    name: Slow golden regression
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+          cache: pip
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - name: Report missing baseline assets
+        run: |
+          if [ ! -f "assets/ficha_19_capa.jpg" ] || [ ! -f "assets/ficha_19_historico.jpg" ] || [ ! -f "assets/teste_0_color (1).png" ]; then
+            echo "::notice title=Assets ausentes::A suíte lenta será pulada. As imagens de assets/ não são versionadas."
+          fi
+      - name: Slow test suite
+        run: python -m pytest -m slow -q -rs
