@@ -1,8 +1,8 @@
 """Configuração do usuário e parâmetros internos de tuning.
 
 Este módulo contém apenas valores imutáveis e os defaults documentados de cada
-etapa. Funções de processamento pertencem a `pipeline.py`, `io.py` e, a partir
-da Fase 3, a `geometry.py` e `quality.py`.
+etapa. Funções de processamento pertencem a `primitives.py`, `detection.py`,
+`quality.py`, `pipeline.py` e `io.py`.
 """
 from __future__ import annotations
 

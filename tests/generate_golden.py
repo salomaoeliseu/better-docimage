@@ -3,17 +3,16 @@
 from __future__ import annotations
 
 import subprocess
-import sys
 import tempfile
 from pathlib import Path
 
 from goldenlib import (
     ASSETS,
+    ENTRYPOINT,
     GOLDEN_DIR,
     MODES,
     OUTPUT_PREFIX,
     ROOT,
-    SCRIPT,
     environment,
     image_stats,
     load_raster,
@@ -29,8 +28,7 @@ def render_asset(source: Path, work: Path) -> None:
     prefix = work / OUTPUT_PREFIX
     subprocess.run(
         [
-            sys.executable,
-            str(SCRIPT),
+            *ENTRYPOINT,
             str(source),
             "-o",
             str(prefix),

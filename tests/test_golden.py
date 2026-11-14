@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import math
 import subprocess
-import sys
 import tempfile
 from pathlib import Path
 
@@ -13,6 +12,7 @@ import pytest
 import goldenlib
 from goldenlib import (
     ASSETS,
+    ENTRYPOINT,
     GOLDEN_DIR,
     MANIFEST_PATH,
     MAX_LEVEL_TOLERANCE,
@@ -20,7 +20,6 @@ from goldenlib import (
     MODES,
     OUTPUT_PREFIX,
     ROOT,
-    SCRIPT,
     THUMB_MAX_SIDE,
     compare_thumbnails,
     image_stats,
@@ -33,6 +32,7 @@ from goldenlib import (
     sha256_bytes,
     sha256_file,
 )
+
 
 @pytest.mark.fast
 def test_pdf_date_normalization_ignores_pillow_timestamps():
@@ -96,8 +96,7 @@ def test_baseline_outputs_are_reproducible():
         for asset in ASSETS:
             subprocess.run(
                 [
-                    sys.executable,
-                    str(SCRIPT),
+                    *ENTRYPOINT,
                     str(ROOT / asset),
                     "-o",
                     str(work / OUTPUT_PREFIX),

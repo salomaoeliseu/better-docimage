@@ -1,7 +1,7 @@
 # Roadmap de refatoração estrutural — Better-DocImage
 
 - **Data**: 2026-11-13
-- **Status**: Fases 0, 1 e 2 concluídas; Fases 3–4 pendentes
+- **Status**: Fases 0, 1, 2 e 3 concluídas; Fase 4 pendente
 - **ADRs**: [001](adr/001-pacote-modular-por-responsabilidade.md) a [006](adr/006-golden-outputs-antes-da-refatoracao.md)
 - **Objetivo**: melhorar manutenibilidade, testabilidade e clareza estrutural **sem alterar o comportamento observável** do pipeline.
 
@@ -159,22 +159,24 @@
 
 **Objetivo:** mover o núcleo volátil depois que os contratos já estão explícitos e testados.
 
+**Concluída em 2026-11-14.** O núcleo foi extraído para `primitives.py` (contratos, matrizes, recorte e reamostragem), `detection.py` (detecção e composição), `quality.py` (iluminação, contraste, nitidez e binário) e `pipeline.py` (apenas `OutputMode`, `EnhancementResult` e orquestração). `geometry.py` foi avaliado em ~200 statements e dividido em `primitives.py` e `detection.py`, conforme a regra da ADR-001. O pacote ficou com sete módulos de código; o maior é `detection.py`, com 142 de 511 statements (27,8%). O wrapper `better_docimage.py` foi removido e `python -m better_docimage` passou a ser o único entry point. A suíte rápida (49 testes), os 18 golden outputs e o gate estrutural de `tests/test_architecture.py` passaram no ambiente pinado.
+
 ### Tarefas
 
-- [ ] Mover funções de matriz, recorte e detecção para `geometry.py`.
-- [ ] Mover iluminação, contraste, unsharp e binarização para `quality.py`.
-- [ ] Consolidar `enhance` em `pipeline.py`, sem lógica de geometria ou qualidade embutida.
-- [ ] Avaliar a divisão de `geometry.py` apenas se ultrapassar ~200 statements; nesse caso, `primitives.py` e `detection.py`.
-- [ ] Expor a API pública via `__init__.py` (fachada estável).
-- [ ] Rodar testes rápidos, golden outputs e checagem de tamanho dos módulos.
+- [x] Mover funções de matriz, recorte e detecção para `geometry.py`; a avaliação de tamanho dividiu o módulo em `primitives.py` e `detection.py`.
+- [x] Mover iluminação, contraste, unsharp e binarização para `quality.py`.
+- [x] Consolidar `enhance` em `pipeline.py`, sem lógica de geometria ou qualidade embutida.
+- [x] Avaliar a divisão de `geometry.py` apenas se ultrapassar ~200 statements; nesse caso, `primitives.py` e `detection.py`.
+- [x] Expor a API pública via `__init__.py` (fachada estável).
+- [x] Rodar testes rápidos, golden outputs e checagem de tamanho dos módulos.
 
 ### Critérios de aceite
 
-- Nenhum módulo concentra mais de 30% dos statements.
-- Sem imports circulares; dependências apontam para `settings`, `io` e tipos compartilhados.
-- API pública documentada na fachada.
-- Golden outputs passam.
-- `better_docimage.py` pode ser removido ou vira wrapper de uma linha.
+- [x] Nenhum módulo concentra mais de 30% dos statements.
+- [x] Sem imports circulares; dependências apontam para `settings`, `io` e tipos compartilhados.
+- [x] API pública documentada na fachada.
+- [x] Golden outputs passam.
+- [x] `better_docimage.py` foi removido; o entry point único é `python -m better_docimage`.
 
 ### Riscos
 
@@ -230,7 +232,7 @@
 - [x] Toda validação de CLI ocorre antes de I/O; erros de uso não produzem traceback.
 - [x] `logging` substitui `print` em código de biblioteca.
 - [x] Cada parâmetro de tuning tem uma única fonte de verdade.
-- [ ] Pacote com 6–7 módulos, sem módulo acima de 30% dos statements e sem imports circulares.
+- [x] Pacote com 6–7 módulos, sem módulo acima de 30% dos statements e sem imports circulares.
 - [ ] Testes unitários e golden outputs rodando em CI.
 - [ ] Instalação limpa, dependências pinadas e entry point funcionando.
 - [ ] ADRs e README atualizados.
@@ -249,27 +251,26 @@
 ## Rollback
 
 - Cada fase é um commit/PR independente, com tag antes da fase seguinte.
-- O script original permanece disponível até o fim da Fase 3.
+- O wrapper original permaneceu disponível até o fim da Fase 3 e foi removido ao final dela.
 - Golden outputs e hashes permitem comparar qualquer versão com o baseline.
 - Nenhuma fase envolve migração de dados ou mudança irreversível.
 
 ## Métricas de sucesso
 
-| Métrica | Antes | Meta |
-|---|---|---|
-| Módulos de código | 1 | 6–7 |
-| Maior componente lógico | 37% | ≤ 30% |
-| Edições para adicionar um modo | 4 | 1 |
-| Tempo até erro de argumento inválido | após processamento | antes de I/O |
-| Testes automatizados | 0 | Unitários + 18 golden outputs |
-| `print` em código de biblioteca | 1 | 0 |
-| Fontes de verdade para tuning | 6+ funções | 1 (`settings.py`) |
-| DPI de saída | fixo em 300 | derivado de `target_width` |
-| Instalação reprodutível | não pinada | `pyproject.toml` + lock |
+| Métrica | Antes | Depois da Fase 3 | Meta |
+|---|---|---|---|
+| Módulos de código | 1 | 7 | 6–7 |
+| Maior componente lógico | 37% | 27,8% (`detection.py`) | ≤ 30% |
+| Edições para adicionar um modo | 4 | 1 (`OutputMode`) | 1 |
+| Tempo até erro de argumento inválido | após processamento | antes de I/O | antes de I/O |
+| Testes automatizados | 0 | 49 rápidos + 1 lento (18 golden outputs) | Unitários + 18 golden outputs |
+| `print` em código de biblioteca | 1 | 0 | 0 |
+| Fontes de verdade para tuning | 6+ funções | 1 (`settings.py`) | 1 (`settings.py`) |
+| DPI de saída | fixo em 300 | derivado de `target_width` | derivado de `target_width` |
+| Instalação reprodutível | não pinada | dependências pinadas; falta `pyproject.toml`/lock | `pyproject.toml` + lock |
 
 ## Próximos passos
 
-1. Revisar e aprovar as ADRs 001–006 (status atual: Aceito).
-2. Executar a Fase 0 e só avançar com a suíte verde.
-3. Abrir um PR por fase, referenciando a ADR correspondente.
-4. Atualizar este roadmap ao concluir cada gate.
+1. Executar a Fase 4: `pyproject.toml`, README, CI e verificação em ambiente limpo.
+2. Fechar os critérios globais restantes depois do gate da Fase 4.
+3. Abrir o PR da Fase 3 referenciando a ADR-001 e o PR da Fase 4 referenciando a ADR-006.

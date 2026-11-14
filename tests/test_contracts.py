@@ -219,14 +219,36 @@ def test_rendered_to_pil_centralizes_color_conversion():
 
 
 def test_facade_only_reexports_from_package_modules():
-    from better_docimage import cli, io, pipeline as pipeline_module, settings
+    from better_docimage import (
+        cli,
+        detection,
+        io,
+        pipeline as pipeline_module,
+        primitives,
+        quality,
+        settings,
+    )
 
     assert bdi.Settings is settings.Settings
     assert bdi.OutputMode is pipeline_module.OutputMode
     assert bdi.EnhancementResult is pipeline_module.EnhancementResult
+    assert bdi.Size is primitives.Size
+    assert bdi.Offset is primitives.Offset
+    assert bdi.TransformPlan is primitives.TransformPlan
+    assert bdi.PreparedInput is primitives.PreparedInput
     assert bdi.RenderedImage is io.RenderedImage
     assert bdi.save_png is io.save_png
     assert bdi.enhance is pipeline_module.enhance
+    assert bdi.build_combined_transform is detection.build_combined_transform
+    assert bdi.estimate_skew is detection.estimate_skew
+    assert bdi.table_geometry_transform is detection.table_geometry_transform
+    assert bdi.perspective_transform is detection.perspective_transform
+    assert bdi.prepare_input is primitives.prepare_input
+    assert bdi.warp_and_upscale_once is primitives.warp_and_upscale_once
+    assert bdi.flatten_illumination is quality.flatten_illumination
+    assert bdi.stretch_contrast is quality.stretch_contrast
+    assert bdi.unsharp is quality.unsharp
+    assert bdi.binarize is quality.binarize
     assert bdi.build_parser is cli.build_parser
     assert bdi.main is cli.main
     for name in bdi.__all__:
@@ -239,6 +261,9 @@ def test_package_modules_import_without_cycles():
     for name in (
         "better_docimage.settings",
         "better_docimage.io",
+        "better_docimage.primitives",
+        "better_docimage.detection",
+        "better_docimage.quality",
         "better_docimage.pipeline",
         "better_docimage.cli",
         "better_docimage.__main__",

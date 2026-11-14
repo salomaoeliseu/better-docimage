@@ -1,6 +1,6 @@
-# Testes das fases 0 a 2
+# Testes das fases 0 a 3
 
-Esta suíte congela o comportamento do pipeline antes e depois da extração do pacote. A Fase 0 criou o baseline; a Fase 1 adicionou os contratos explícitos, a validação antecipada e a centralização do tuning sem mover arquivos; a Fase 2 extraiu I/O, CLI e settings para `better_docimage/` sem alterar pixels.
+Esta suíte congela o comportamento do pipeline antes e depois da extração do pacote. A Fase 0 criou o baseline; a Fase 1 adicionou os contratos explícitos, a validação antecipada e a centralização do tuning sem mover arquivos; a Fase 2 extraiu I/O, CLI e settings para `better_docimage/`; a Fase 3 extraiu geometria, detecção, qualidade e orquestração, sem alterar pixels.
 
 ## Como rodar
 
@@ -11,9 +11,9 @@ pytest -m fast
 pytest -m slow
 ```
 
-`pytest -m fast` é o gate das fases 0 a 2. A suíte `slow` reexecuta o pipeline nas três imagens de `assets/` e por isso fica de fora desse gate.
+`pytest -m fast` é o gate das fases 0 a 3. A suíte `slow` reexecuta o pipeline nas três imagens de `assets/` e por isso fica de fora desse gate.
 
-## Estrutura após a Fase 2
+## Estrutura após a Fase 3
 
 O código de produção vive no pacote `better_docimage/`:
 
@@ -24,10 +24,14 @@ O código de produção vive no pacote `better_docimage/`:
 | `cli.py` | parser, validação antecipada, `run` e `main` |
 | `settings.py` | `Settings`, `DetectionParams`, `QualityParams`, `IoParams` e constantes |
 | `io.py` | `RenderedImage`, leitura e escrita PNG/PDF |
-| `pipeline.py` | `enhance` e contratos; geometria e qualidade ficam aqui até a Fase 3 |
+| `primitives.py` | contratos geométricos, recorte, matrizes e reamostragem única |
+| `detection.py` | detecção de tabela/perspectiva, estimativa de skew e composição |
+| `quality.py` | iluminação, contraste, unsharp e binarização |
+| `pipeline.py` | `OutputMode`, `EnhancementResult` e `enhance`; apenas orquestração |
 
-O `better_docimage.py` na raiz é um wrapper temporário de compatibilidade: ele apenas delega para `better_docimage.cli.main`. Os dois caminhos, `python better_docimage.py` e `python -m better_docimage`, produzem bytes idênticos no teste rápido de paridade. O golden lento continua exercitando o wrapper para garantir que a compatibilidade não se perca.
+O wrapper `better_docimage.py` foi removido ao fim da Fase 3. O único ponto de entrada documentado é `python -m better_docimage`; a Fase 4 adiciona o console script `better-docimage`. A suíte lenta também usa o entry point de módulo, então o golden continua exercitando o caminho real.
 
+O `geometry.py` previsto na ADR-001 não foi mantido como módulo único: ele passaria de ~200 statements e de 30% do total. A divisão seguiu a regra da própria ADR, com `primitives.py` para o núcleo estável e `detection.py` para a parte volátil de detecção e composição.
 
 ## Dependências do baseline
 
@@ -56,6 +60,10 @@ As imagens completas não são versionadas. O PDF reutiliza a miniatura e as est
 
 A Fase 1 passou a derivar o DPI de `target_width / 8.27` (ADR-005). Para o alvo padrão de 2480 px, o metadado físico deixa de ser 300 DPI fixo e passa a ser aproximadamente 299,87 DPI. Isso altera os bytes de PNG e PDF e, portanto, os hashes do baseline. Os pixels, as estatísticas e as miniaturas permanecem idênticos; o manifest foi regenerado uma única vez e as miniaturas foram conferidas por SHA-256 antes e depois.
 
+### Fase 3 sem mudança de pixels
+
+A extração de `primitives.py`, `detection.py` e `quality.py`, com `pipeline.py` reduzido a orquestração, não alterou a ordem das operações nem as fórmulas. Os 18 hashes e as miniaturas do manifest continuam válidos; o manifest não foi regenerado.
+
 ### Tolerâncias
 
 Na miniatura, em níveis de 8 bits:
@@ -73,12 +81,13 @@ PNG não recebe esse tratamento: o hash cru tem de coincidir no ambiente pinado.
 
 ## O que os testes rápidos travam
 
-Pacote e fachada (Fase 2):
+Pacote e fachada (Fases 2 e 3):
 
-- a fachada `better_docimage` reexporta os contratos, o I/O, o pipeline e a CLI a partir dos módulos que os definem;
+- a fachada `better_docimage` reexporta os contratos, o I/O, o pipeline, a geometria, a qualidade e a CLI a partir dos módulos que os definem;
 - os módulos do pacote importam sem ciclos;
+- o pacote tem exatamente sete módulos de código e nenhum concentra mais de 30% dos statements (`tests/test_architecture.py`);
 - `python -m better_docimage --help` funciona e mostra os argumentos;
-- `python -m better_docimage` e o wrapper `better_docimage.py` geram PNGs idênticos.
+- o wrapper `better_docimage.py` não existe mais; o entry point de módulo é o único caminho.
 
 Contratos da Fase 1:
 
@@ -88,7 +97,7 @@ Contratos da Fase 1:
 - `enhance` não calcula `gray`/`bw` quando apenas `color` é pedido, nem `bw` quando apenas `gray` é pedido;
 - o DPI é derivado da largura alvo e o I/O não varre pixels para decidir se a imagem é binária.
 
-Geometria, com matrizes controladas:
+Geometria (`primitives.py` e `detection.py`), com matrizes controladas:
 
 - `combined = fine_rotation @ crop_matrix @ geometry`;
 - essa ordem não é intercambiável;
@@ -97,7 +106,7 @@ Geometria, com matrizes controladas:
 - `prepare_input` é o único ponto que converte `--corners` da imagem original para a imagem recortada;
 - imagem sem margens mantém offset zero, imagem totalmente branca devolve offset zero e cantos fora do recorte não são truncados.
 
-Reamostragem:
+Reamostragem (`primitives.py`):
 
 - `warp_and_upscale_once` chama `warpPerspective` uma vez;
 - `enhance` chama esse caminho final uma vez.

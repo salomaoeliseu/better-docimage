@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -22,16 +21,7 @@ def _write_input(directory: Path) -> Path:
 
 def _run(*args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [sys.executable, str(goldenlib.SCRIPT), *args],
-        cwd=goldenlib.ROOT,
-        capture_output=True,
-        text=True,
-    )
-
-
-def _run_module(*args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        [sys.executable, "-m", "better_docimage", *args],
+        [*goldenlib.ENTRYPOINT, *args],
         cwd=goldenlib.ROOT,
         capture_output=True,
         text=True,
@@ -184,23 +174,9 @@ def test_missing_input_exits_1_without_traceback(tmp_path: Path):
 
 
 def test_module_entry_point_shows_help():
-    result = _run_module("--help")
+    result = _run("--help")
 
     assert result.returncode == 0
     assert "--modes" in result.stdout
     assert "Traceback" not in result.stderr
-
-
-def test_module_and_wrapper_produce_identical_output(tmp_path: Path):
-    source = _write_input(tmp_path)
-    common = [str(source), "--modes", "gray", "--denoise", "0", "--width", "32"]
-
-    wrapper = _run(*common, "-o", str(tmp_path / "wrapper"))
-    module = _run_module(*common, "-o", str(tmp_path / "module"))
-
-    assert wrapper.returncode == 0
-    assert module.returncode == 0
-    assert (tmp_path / "wrapper_gray.png").read_bytes() == (
-        tmp_path / "module_gray.png"
-    ).read_bytes()
 
