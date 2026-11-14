@@ -7,16 +7,16 @@
 
 ## Baseline
 
-| Métrica | Valor em 2026-11-13 |
-|---|---|
-| Módulos de código | 1 (`better_docimage_refactored.py`) |
-| Linhas | 565 |
-| Funções | 19 |
-| Statements (AST) | 254 |
-| Testes automatizados | 0 |
-| Maior componente lógico | Detecção geométrica — 94 statements (37%) |
-| Dependências observadas no `.venv` | OpenCV 5.0.0, NumPy 2.5.4, Pillow 13.0.0 |
-| Dependências declaradas | `requirements.txt` sem versões pinadas |
+| Métrica                            | Valor em 2026-11-13                       |
+| ---------------------------------- | ----------------------------------------- |
+| Módulos de código                  | 1 (`better_docimage.py`)                  |
+| Linhas                             | 565                                       |
+| Funções                            | 19                                        |
+| Statements (AST)                   | 254                                       |
+| Testes automatizados               | 0                                         |
+| Maior componente lógico            | Detecção geométrica — 94 statements (37%) |
+| Dependências observadas no `.venv` | OpenCV 5.0.0, NumPy 2.5.4, Pillow 13.0.0  |
+| Dependências declaradas            | `requirements.txt` sem versões pinadas    |
 
 ## Escopo
 
@@ -80,7 +80,7 @@
 
 - [x] `pytest -m fast` verde na versão atual.
 - [x] As 18 saídas baseline são reproduzíveis no ambiente pinado.
-- [x] Nenhuma alteração em `better_docimage_refactored.py`.
+- [x] Nenhuma alteração em `better_docimage.py`.
 - [x] Tolerâncias e limitações registradas em `tests/README.md`.
 
 ### Riscos
@@ -135,7 +135,7 @@
 - [ ] Mover parser, validação e `run` para `cli.py`.
 - [ ] Mover `Settings` e as dataclasses de tuning para `settings.py`.
 - [ ] Manter `enhance` em `pipeline.py`; geometria e qualidade permanecem temporariamente nesse módulo até a Fase 3.
-- [ ] Atualizar imports e testes; manter `python better_docimage_refactored.py` funcionando como wrapper temporário ou remover após validação.
+- [ ] Atualizar imports e testes; manter `python better_docimage.py` funcionando como wrapper temporário ou remover após validação.
 - [ ] Adicionar `python -m better_docimage` e testar `--help`.
 
 ### Critérios de aceite
@@ -172,7 +172,7 @@
 - Sem imports circulares; dependências apontam para `settings`, `io` e tipos compartilhados.
 - API pública documentada na fachada.
 - Golden outputs passam.
-- `better_docimage_refactored.py` pode ser removido ou vira wrapper de uma linha.
+- `better_docimage.py` pode ser removido ou vira wrapper de uma linha.
 
 ### Riscos
 
