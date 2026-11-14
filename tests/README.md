@@ -1,6 +1,6 @@
 # Testes da fase 0
 
-Esta suíte congela o comportamento de `better_docimage_refactored.py` antes da refatoração. O script de produção não é alterado aqui.
+Esta suíte congela o comportamento de `better_docimage.py` antes da refatoração. O script de produção não é alterado aqui.
 
 ## Como rodar
 

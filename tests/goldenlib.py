@@ -16,7 +16,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[1]
 GOLDEN_DIR = ROOT / "tests" / "golden"
 MANIFEST_PATH = GOLDEN_DIR / "manifest.json"
-SCRIPT = ROOT / "better_docimage_refactored.py"
+SCRIPT = ROOT / "better_docimage.py"
 THUMB_MAX_SIDE = 600
 MEAN_ABS_TOLERANCE = 1 / 255
 MAX_LEVEL_TOLERANCE = 2

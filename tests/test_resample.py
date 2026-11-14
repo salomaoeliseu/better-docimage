@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import better_docimage_refactored as bdi
+import better_docimage as bdi
 
 pytestmark = pytest.mark.fast
 
