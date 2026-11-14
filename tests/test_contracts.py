@@ -9,6 +9,7 @@ import pytest
 from PIL import Image
 
 import better_docimage as bdi
+import better_docimage.pipeline as pipeline
 
 pytestmark = pytest.mark.fast
 
@@ -111,7 +112,7 @@ def test_parser_accepts_verbose_flag():
 def test_enhance_only_computes_requested_modes(monkeypatch):
     image = np.full((20, 30, 3), 128, dtype=np.uint8)
     monkeypatch.setattr(
-        bdi,
+        pipeline,
         "build_combined_transform",
         lambda *args, **kwargs: _neutral_plan(),
     )
@@ -119,7 +120,7 @@ def test_enhance_only_computes_requested_modes(monkeypatch):
     def fail_binarize(*args, **kwargs):
         raise AssertionError("binarize não deveria ser chamado")
 
-    monkeypatch.setattr(bdi, "binarize", fail_binarize)
+    monkeypatch.setattr(pipeline, "binarize", fail_binarize)
 
     color_only = bdi.enhance(
         image,
@@ -142,7 +143,7 @@ def test_enhance_only_computes_requested_modes(monkeypatch):
 
     monkeypatch.undo()
     monkeypatch.setattr(
-        bdi,
+        pipeline,
         "build_combined_transform",
         lambda *args, **kwargs: _neutral_plan(),
     )
@@ -167,7 +168,7 @@ def test_enhance_rejects_empty_mode_list():
 def test_enhance_does_not_write_to_stdout(capsys, monkeypatch):
     image = np.full((20, 30, 3), 128, dtype=np.uint8)
     monkeypatch.setattr(
-        bdi,
+        pipeline,
         "build_combined_transform",
         lambda *args, **kwargs: _neutral_plan(),
     )
@@ -215,3 +216,31 @@ def test_rendered_to_pil_centralizes_color_conversion():
         bdi.rendered_to_pil(
             bdi.RenderedImage(np.zeros((2, 2, 3), dtype=np.uint8), is_binary=True)
         )
+
+
+def test_facade_only_reexports_from_package_modules():
+    from better_docimage import cli, io, pipeline as pipeline_module, settings
+
+    assert bdi.Settings is settings.Settings
+    assert bdi.OutputMode is pipeline_module.OutputMode
+    assert bdi.EnhancementResult is pipeline_module.EnhancementResult
+    assert bdi.RenderedImage is io.RenderedImage
+    assert bdi.save_png is io.save_png
+    assert bdi.enhance is pipeline_module.enhance
+    assert bdi.build_parser is cli.build_parser
+    assert bdi.main is cli.main
+    for name in bdi.__all__:
+        assert hasattr(bdi, name)
+
+
+def test_package_modules_import_without_cycles():
+    import importlib
+
+    for name in (
+        "better_docimage.settings",
+        "better_docimage.io",
+        "better_docimage.pipeline",
+        "better_docimage.cli",
+        "better_docimage.__main__",
+    ):
+        assert importlib.import_module(name) is not None

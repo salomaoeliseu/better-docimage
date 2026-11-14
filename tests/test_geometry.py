@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 import better_docimage as bdi
+import better_docimage.pipeline as pipeline
 
 pytestmark = pytest.mark.fast
 
@@ -32,19 +33,19 @@ def test_combined_transform_is_fine_rotation_then_crop_then_geometry(monkeypatch
     fine_angle = 0.4
 
     monkeypatch.setattr(
-        bdi,
+        pipeline,
         "table_geometry_transform",
         lambda img, params=bdi.DetectionParams(): bdi.TransformPlan(
             geometry.copy(), bdi.Size(width, height)
         ),
     )
     monkeypatch.setattr(
-        bdi,
+        pipeline,
         "estimate_skew",
         lambda gray, max_angle=5.0, params=None: fine_angle,
     )
     monkeypatch.setattr(
-        bdi,
+        pipeline,
         "trim_blank_border_with_offset",
         lambda img, params=bdi.DetectionParams(): (img, trim_offset),
     )
@@ -68,9 +69,11 @@ def test_combined_transform_is_identity_when_detection_and_skew_are_neutral(monk
     image = _solid()
     height, width = image.shape[:2]
 
-    monkeypatch.setattr(bdi, "table_geometry_transform", lambda *args, **kwargs: None)
     monkeypatch.setattr(
-        bdi,
+        pipeline, "table_geometry_transform", lambda *args, **kwargs: None
+    )
+    monkeypatch.setattr(
+        pipeline,
         "estimate_skew",
         lambda gray, max_angle=5.0, params=None: 0.0,
     )
@@ -91,13 +94,13 @@ def test_prepare_input_converts_original_corners_once(monkeypatch):
         return bdi.TransformPlan(np.eye(3, dtype=np.float64), bdi.Size(width, height))
 
     monkeypatch.setattr(
-        bdi,
+        pipeline,
         "trim_blank_border_with_offset",
         lambda img, params=bdi.DetectionParams(): (img, bdi.Offset(3, 5)),
     )
-    monkeypatch.setattr(bdi, "perspective_transform", fake_perspective)
+    monkeypatch.setattr(pipeline, "perspective_transform", fake_perspective)
     monkeypatch.setattr(
-        bdi,
+        pipeline,
         "estimate_skew",
         lambda gray, max_angle=5.0, params=None: 0.0,
     )
@@ -123,9 +126,9 @@ def test_prepare_input_without_margins_keeps_zero_offset_and_corners(monkeypatch
         height, width = img.shape[:2]
         return bdi.TransformPlan(np.eye(3, dtype=np.float64), bdi.Size(width, height))
 
-    monkeypatch.setattr(bdi, "perspective_transform", fake_perspective)
+    monkeypatch.setattr(pipeline, "perspective_transform", fake_perspective)
     monkeypatch.setattr(
-        bdi,
+        pipeline,
         "estimate_skew",
         lambda gray, max_angle=5.0, params=None: 0.0,
     )
@@ -168,14 +171,14 @@ def test_prepare_input_does_not_clamp_corners_outside_the_trimmed_image():
 def test_invalid_perspective_logs_the_fallback_reason(monkeypatch, caplog):
     image = _solid()
     corners = np.array([[1, 2], [3, 4], [5, 6], [7, 8]], dtype=np.float32)
-    monkeypatch.setattr(bdi, "perspective_transform", lambda *args, **kwargs: None)
+    monkeypatch.setattr(pipeline, "perspective_transform", lambda *args, **kwargs: None)
     monkeypatch.setattr(
-        bdi,
+        pipeline,
         "estimate_skew",
         lambda gray, max_angle=5.0, params=None: 0.0,
     )
 
-    with caplog.at_level(logging.WARNING, logger="better_docimage"):
+    with caplog.at_level(logging.WARNING, logger="better_docimage.pipeline"):
         plan = bdi.build_combined_transform(image, corners)
 
     assert "perspectiva inválida" in caplog.text
@@ -184,14 +187,16 @@ def test_invalid_perspective_logs_the_fallback_reason(monkeypatch, caplog):
 
 def test_missing_table_logs_the_fallback_reason(monkeypatch, caplog):
     image = _solid()
-    monkeypatch.setattr(bdi, "table_geometry_transform", lambda *args, **kwargs: None)
     monkeypatch.setattr(
-        bdi,
+        pipeline, "table_geometry_transform", lambda *args, **kwargs: None
+    )
+    monkeypatch.setattr(
+        pipeline,
         "estimate_skew",
         lambda gray, max_angle=5.0, params=None: 0.0,
     )
 
-    with caplog.at_level(logging.WARNING, logger="better_docimage"):
+    with caplog.at_level(logging.WARNING, logger="better_docimage.pipeline"):
         plan = bdi.build_combined_transform(image, None)
 
     assert "geometria de tabela não detectada" in caplog.text

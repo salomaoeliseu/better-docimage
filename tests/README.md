@@ -1,6 +1,6 @@
-# Testes das fases 0 e 1
+# Testes das fases 0 a 2
 
-Esta suíte congela o comportamento de `better_docimage.py` antes da extração do pacote. A Fase 0 criou o baseline; a Fase 1 adicionou os contratos explícitos, a validação antecipada e a centralização do tuning sem mover arquivos.
+Esta suíte congela o comportamento do pipeline antes e depois da extração do pacote. A Fase 0 criou o baseline; a Fase 1 adicionou os contratos explícitos, a validação antecipada e a centralização do tuning sem mover arquivos; a Fase 2 extraiu I/O, CLI e settings para `better_docimage/` sem alterar pixels.
 
 ## Como rodar
 
@@ -11,7 +11,23 @@ pytest -m fast
 pytest -m slow
 ```
 
-`pytest -m fast` é o gate das fases 0 e 1. A suíte `slow` reexecuta o pipeline nas três imagens de `assets/` e por isso fica de fora desse gate.
+`pytest -m fast` é o gate das fases 0 a 2. A suíte `slow` reexecuta o pipeline nas três imagens de `assets/` e por isso fica de fora desse gate.
+
+## Estrutura após a Fase 2
+
+O código de produção vive no pacote `better_docimage/`:
+
+| Módulo | Responsabilidade |
+|---|---|
+| `__init__.py` | fachada pública; apenas reexports e `__all__` |
+| `__main__.py` | `python -m better_docimage` |
+| `cli.py` | parser, validação antecipada, `run` e `main` |
+| `settings.py` | `Settings`, `DetectionParams`, `QualityParams`, `IoParams` e constantes |
+| `io.py` | `RenderedImage`, leitura e escrita PNG/PDF |
+| `pipeline.py` | `enhance` e contratos; geometria e qualidade ficam aqui até a Fase 3 |
+
+O `better_docimage.py` na raiz é um wrapper temporário de compatibilidade: ele apenas delega para `better_docimage.cli.main`. Os dois caminhos, `python better_docimage.py` e `python -m better_docimage`, produzem bytes idênticos no teste rápido de paridade. O golden lento continua exercitando o wrapper para garantir que a compatibilidade não se perca.
+
 
 ## Dependências do baseline
 
@@ -56,6 +72,13 @@ O Pillow grava `CreationDate` e `ModDate` com a hora da execução. O SHA-256 cr
 PNG não recebe esse tratamento: o hash cru tem de coincidir no ambiente pinado.
 
 ## O que os testes rápidos travam
+
+Pacote e fachada (Fase 2):
+
+- a fachada `better_docimage` reexporta os contratos, o I/O, o pipeline e a CLI a partir dos módulos que os definem;
+- os módulos do pacote importam sem ciclos;
+- `python -m better_docimage --help` funciona e mostra os argumentos;
+- `python -m better_docimage` e o wrapper `better_docimage.py` geram PNGs idênticos.
 
 Contratos da Fase 1:
 

@@ -1,7 +1,7 @@
 # Roadmap de refatoração estrutural — Better-DocImage
 
 - **Data**: 2026-11-13
-- **Status**: Fases 0 e 1 concluídas; Fases 2–4 pendentes
+- **Status**: Fases 0, 1 e 2 concluídas; Fases 3–4 pendentes
 - **ADRs**: [001](adr/001-pacote-modular-por-responsabilidade.md) a [006](adr/006-golden-outputs-antes-da-refatoracao.md)
 - **Objetivo**: melhorar manutenibilidade, testabilidade e clareza estrutural **sem alterar o comportamento observável** do pipeline.
 
@@ -128,23 +128,25 @@
 
 **Objetivo:** criar o pacote e mover primeiro o código estável e de baixa volatilidade.
 
+**Concluída em 2026-11-14.** O pacote `better_docimage/` agora contém `settings.py`, `io.py`, `pipeline.py` e `cli.py`, além da fachada em `__init__.py` e do entry point em `__main__.py`. Geometria e qualidade permanecem temporariamente em `pipeline.py`, como previsto. A suíte rápida, os 18 golden outputs e a paridade entre `python better_docimage.py` e `python -m better_docimage` passaram no ambiente pinado.
+
 ### Tarefas
 
-- [ ] Criar `better_docimage/` com `__init__.py` de fachada e `__main__.py`.
-- [ ] Mover `load_image`, `save_png`, `save_pdf` e `RenderedImage` para `io.py`.
-- [ ] Mover parser, validação e `run` para `cli.py`.
-- [ ] Mover `Settings` e as dataclasses de tuning para `settings.py`.
-- [ ] Manter `enhance` em `pipeline.py`; geometria e qualidade permanecem temporariamente nesse módulo até a Fase 3.
-- [ ] Atualizar imports e testes; manter `python better_docimage.py` funcionando como wrapper temporário ou remover após validação.
-- [ ] Adicionar `python -m better_docimage` e testar `--help`.
+- [x] Criar `better_docimage/` com `__init__.py` de fachada e `__main__.py`.
+- [x] Mover `load_image`, `save_png`, `save_pdf` e `RenderedImage` para `io.py`.
+- [x] Mover parser, validação e `run` para `cli.py`.
+- [x] Mover `Settings` e as dataclasses de tuning para `settings.py`.
+- [x] Manter `enhance` em `pipeline.py`; geometria e qualidade permanecem temporariamente nesse módulo até a Fase 3.
+- [x] Atualizar imports e testes; manter `python better_docimage.py` funcionando como wrapper temporário ou remover após validação.
+- [x] Adicionar `python -m better_docimage` e testar `--help`.
 
 ### Critérios de aceite
 
-- Comportamento da CLI idêntico ao da versão anterior, exceto pelas validações novas.
-- `python -m better_docimage` e o entry point temporário funcionam.
-- Golden outputs passam.
-- Sem imports circulares.
-- `__init__.py` não contém lógica de domínio.
+- [x] Comportamento da CLI idêntico ao da versão anterior, exceto pelas validações novas.
+- [x] `python -m better_docimage` e o entry point temporário funcionam.
+- [x] Golden outputs passam.
+- [x] Sem imports circulares.
+- [x] `__init__.py` não contém lógica de domínio.
 
 ### Riscos
 
