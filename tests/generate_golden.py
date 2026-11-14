@@ -16,6 +16,7 @@ from goldenlib import (
     environment,
     image_stats,
     load_raster,
+    missing_assets,
     normalized_pdf_sha256,
     save_thumbnail,
     sha256_file,
@@ -63,6 +64,12 @@ def collect_output(source: Path, work: Path, kind: str, mode: str, thumb_rel: st
 
 
 def main() -> None:
+    missing = missing_assets()
+    if missing:
+        raise SystemExit(
+            "assets ausentes para gerar o baseline: " + ", ".join(missing)
+        )
+
     outputs: list[dict] = []
     with tempfile.TemporaryDirectory(prefix="better-docimage-golden-") as temporary:
         work = Path(temporary)

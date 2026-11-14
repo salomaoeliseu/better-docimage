@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "better-docimage"
+version = "0.1.0"
+description = "Melhora a legibilidade de documentos fotografados com correção de perspectiva, iluminação, contraste e nitidez."
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "Salomão Eliseu" }]
+keywords = ["document", "image-processing", "opencv", "perspective", "scanner"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: End Users/Desktop",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Multimedia :: Graphics :: Graphics Conversion",
+]
+dependencies = [
+  "opencv-python==5.0.0.93",
+  "numpy==2.5.4",
+  "pillow==13.0.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==9.2.0"]
+
+[project.scripts]
+better-docimage = "better_docimage.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/salomaoeliseu/better-docimage"
+Repository = "https://github.com/salomaoeliseu/better-docimage"
+Issues = "https://github.com/salomaoeliseu/better-docimage/issues"
+Roadmap = "https://github.com/salomaoeliseu/better-docimage/blob/main/docs/roadmap-refatoracao.md"
+ADRs = "https://github.com/salomaoeliseu/better-docimage/blob/main/docs/adr/README.md"
+
+[tool.setuptools]
+packages = ["better_docimage"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+norecursedirs = [".venv", ".git", "build", "dist"]
+markers = [
+  "fast: testes unitários e de CLI que não reprocessam as imagens de assets/",
+  "slow: regressão dos golden outputs; reexecuta o pipeline nas três imagens",
+]

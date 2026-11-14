@@ -31,6 +31,11 @@ OUTPUT_PREFIX = "baseline"
 PDF_DATE = re.compile(br"\(D:\d{14}Z\)")
 
 
+def missing_assets() -> tuple[str, ...]:
+    """Assets não são versionados; a suíte lenta só roda quando eles existem."""
+    return tuple(asset for asset in ASSETS if not (ROOT / asset).is_file())
+
+
 def environment() -> dict[str, str]:
     return {
         "opencv_python": version("opencv-python"),
